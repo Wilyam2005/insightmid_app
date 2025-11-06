@@ -1,6 +1,7 @@
 // lib/features/insightmind/presentation/pages/settings_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:insightmid_app/theme_manager.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,7 +11,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = true; // Asumsi default dark mode
   bool _notificationsEnabled = true;
 
   @override
@@ -33,19 +33,28 @@ class _SettingsPageState extends State<SettingsPage> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            SwitchListTile(
-              title: const Text('Mode Gelap'),
-              value: _darkMode,
-              onChanged: (bool value) {
-                setState(() {
-                  _darkMode = value;
-                  // TODO: Implementasi logika ganti tema aplikasi
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mode Gelap ${value ? 'Aktif' : 'Nonaktif'} (UI belum berubah)')),
-                  );
-                });
+            // Use the global theme manager so toggling affects the whole app.
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: themeModeNotifier,
+              builder: (context, mode, child) {
+                return SwitchListTile(
+                  title: const Text('Mode Gelap'),
+                  value: mode == ThemeMode.dark,
+                  onChanged: (bool value) {
+                    // Toggle the global theme. The app listens to themeModeNotifier.
+                    toggleThemeMode();
+                    // inform user
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Mode Gelap ${value ? 'Aktif' : 'Nonaktif'}'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                    setState(() {}); // rebuild to reflect new switch state
+                  },
+                  secondary: const Icon(Icons.dark_mode_outlined),
+                );
               },
-              secondary: const Icon(Icons.dark_mode_outlined),
             ),
             const Divider(),
             SwitchListTile(
