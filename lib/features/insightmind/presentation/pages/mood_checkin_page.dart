@@ -24,6 +24,17 @@ final cameraControllerProvider = FutureProvider<CameraController>((ref) async {
   });
 
   await controller.initialize();
+
+  // optional: cegah auto zoom jika device mendukung
+  try {
+    final minZoom = await controller.getMinZoomLevel();
+    await controller.setZoomLevel(minZoom);
+
+    if (minZoom <= 1.0) {
+      await controller.setZoomLevel(1.0);
+    }
+  } catch (_) {}
+
   return controller;
 });
 
@@ -45,35 +56,19 @@ class MoodCheckinPage extends ConsumerWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // --- PERBAIKAN UNTUK "GEPENG" (FULLSCREEN PREVIEW) ---
-          final screenSize = MediaQuery.of(context).size;
-          // Hitung rasio aspek kamera
-          final cameraAspectRatio = controller.value.aspectRatio;
-          
-          // Hitung rasio aspek layar
-          final screenAspectRatio = screenSize.width / screenSize.height;
-          
-          // Hitung skala untuk 'cover' (mengisi layar)
-          var scale = screenAspectRatio / cameraAspectRatio;
-          // Jika rasio kamera lebih 'lebar' dari layar, kita perlu scale berdasarkan tinggi
-          if (cameraAspectRatio > screenAspectRatio) {
-             scale = cameraAspectRatio / screenAspectRatio;
-          }
-          // ---------------------------------------------------
-
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Gunakan ClipRect agar preview yang 'overflow' (terpotong) tidak terlihat
-              ClipRect(
-                child: Transform.scale(
-                  scale: scale,
-                  // Center agar scaling terjadi dari tengah
-                  child: Center(
-                    child: CameraPreview(controller),
-                  ),
+              // ⭐ FIX: Ganti Transform.scale -> FittedBox (anti zoom)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: controller.value.previewSize!.height,
+                  height: controller.value.previewSize!.width,
+                  child: CameraPreview(controller),
                 ),
               ),
+
               _buildInstructions(),
             ],
           );
@@ -119,14 +114,13 @@ class MoodCheckinPage extends ConsumerWidget {
     try {
       final XFile imageFile = await controller.takePicture();
       final inputImage = InputImage.fromFilePath(imageFile.path);
-      
+
       final options = FaceDetectorOptions(
-        enableClassification: true, 
+        enableClassification: true,
       );
       final faceDetector = FaceDetector(options: options);
 
       final List<Face> faces = await faceDetector.processImage(inputImage);
-      
       await faceDetector.close();
 
       double smileProbability = 0.0;
