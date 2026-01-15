@@ -7,7 +7,7 @@ import '../providers/questionnaire_provider.dart';
 import '../providers/score_provider.dart';
 import 'result_page.dart';
 
-// Import baru
+// Import untuk fitur History
 import '../../domain/entities/history_entry.dart';
 import '../providers/history_provider.dart';
 
@@ -35,7 +35,6 @@ class SummaryPage extends ConsumerWidget {
           ),
         ),
         child: ListView.separated(
-          // ... (kode ListView.separated tidak berubah) ...
           padding: const EdgeInsets.all(16.0),
           itemCount: questions.length,
           separatorBuilder: (context, index) => const SizedBox(height: 8),
@@ -76,39 +75,44 @@ class SummaryPage extends ConsumerWidget {
           child: FilledButton.icon(
             icon: const Icon(Icons.check_circle_outline),
             label: const Text('Konfirmasi & Lihat Hasil'),
-            onPressed: () async { // Jadikan async
-              // 1. Alirkan jawaban ke pipeline minggu 2 (score_provider)
+            onPressed: () async {
+              // 1. Kirim jawaban ke provider skor
               final answersOrdered = <int>[];
               for (final q in questions) {
-                answersOrdered.add(qState.answers[q.id]!);
+                // Pastikan tidak ada nilai null (default ke 0 jika error)
+                answersOrdered.add(qState.answers[q.id] ?? 0);
               }
               ref.read(answersProvider.notifier).state = answersOrdered;
 
-              // --- PERUBAHAN DI SINI ---
-              // 2. Ambil hasil akhir untuk disimpan
+              // 2. Ambil hasil perhitungan (Skor & Risiko)
               final result = ref.read(resultProvider);
 
-              // 3. Buat entri riwayat baru
+              // 3. Simpan ke Riwayat (History)
               final newEntry = HistoryEntry(
                 score: result.score,
                 riskLevel: result.riskLevel,
                 date: DateTime.now(),
               );
 
-              // 4. Simpan ke database Hive
               await ref.read(historyRepositoryProvider).addHistory(newEntry);
               
-              // 5. Reset provider riwayat agar UI update
+              // Refresh provider agar halaman History otomatis update
               ref.invalidate(historyProvider);
-              // --------------------------
 
-              // 6. Reset form kuesioner
+              // 4. Reset Kuesioner untuk pemakaian berikutnya
               ref.read(questionnaireProvider.notifier).reset();
 
-              // 7. Navigasi ke ResultPage (pastikan context masih valid)
+              // 5. Navigasi ke Halaman Hasil
               if (context.mounted) {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const ResultPage()),
+                  MaterialPageRoute(
+                    builder: (_) => ResultPage(
+                      // --- PERBAIKAN DI SINI: Kirim data skor & risiko ---
+                      totalScore: result.score,
+                      riskLevel: result.riskLevel,
+                      // ---------------------------------------------------
+                    ),
+                  ),
                 );
               }
             },
