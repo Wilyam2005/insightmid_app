@@ -23,6 +23,10 @@ dependencies:
   google_mlkit_face_detection: ^0.11.0 # Untuk deteksi wajah
   google_mlkit_commons: ^0.8.0 # Dibutuhkan oleh ML Kit
   smooth_page_indicator: ^1.1.0
+  permission_handler: ^11.3.1
+  sensors_plus: ^6.1.0
+  pedometer: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
