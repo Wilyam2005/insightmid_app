@@ -1,6 +1,6 @@
 // lib/features/insightmind/presentation/providers/questionnaire_provider.dart
 
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // <-- INI YANG DIPERBAIKI
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // <-- PERBAIKAN
 import '../../domain/entities/question.dart';
 
 // State: map id pertanyaan -> skor (0..3)
