@@ -1,7 +1,7 @@
 // lib/features/insightmind/domain/entities/question.dart
 
 class AnswerOption {
-  final String label; // contoh: "Tidak Pernah", "Beberapa Hari", ...
+  final String label; // MISAL: "Tidak Pernah", "Beberapa Hari", ...
   final int score; // 0..3
 
   const AnswerOption({required this.label, required this.score});
