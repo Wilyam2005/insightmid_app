@@ -18,20 +18,29 @@ class SummaryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final questions = ref.watch(questionsProvider);
     final qState = ref.watch(questionnaireProvider);
+    
+    // Deteksi Mode Gelap
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ringkasan Jawaban Anda'),
+        title: const Text('Ringkasan Jawaban'),
+        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.teal.shade50,
-            ],
+            colors: isDarkMode
+                ? [
+                    Colors.grey.shade900,
+                    Colors.teal.shade900.withOpacity(0.4),
+                  ]
+                : [
+                    Colors.white,
+                    Colors.teal.shade50,
+                  ],
           ),
         ),
         child: ListView.separated(
@@ -52,6 +61,7 @@ class SummaryPage extends ConsumerWidget {
 
             return Card(
               elevation: 2.0,
+              // Card otomatis menyesuaikan warna surface di dark mode
               child: ListTile(
                 title: Text(
                   q.text,
@@ -61,7 +71,8 @@ class SummaryPage extends ConsumerWidget {
                   selectedLabel,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    // Sesuaikan warna teks agar terlihat jelas di kedua mode
+                    color: isDarkMode ? Colors.tealAccent : Theme.of(context).primaryColor,
                   ),
                 ),
               ),
@@ -107,10 +118,8 @@ class SummaryPage extends ConsumerWidget {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (_) => ResultPage(
-                      // --- PERBAIKAN DI SINI: Kirim data skor & risiko ---
                       totalScore: result.score,
                       riskLevel: result.riskLevel,
-                      // ---------------------------------------------------
                     ),
                   ),
                 );

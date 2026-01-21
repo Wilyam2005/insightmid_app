@@ -1,38 +1,29 @@
 // lib/features/insightmind/presentation/pages/main_nav_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_page.dart';
 import 'history_page.dart';
-// Hapus import mood_checkin_page.dart
 
-class MainNavPage extends StatefulWidget {
+// 1. Provider global untuk mengontrol tab mana yang aktif
+final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
+
+class MainNavPage extends ConsumerWidget {
   const MainNavPage({super.key});
 
-  @override
-  State<MainNavPage> createState() => _MainNavPageState();
-}
-
-class _MainNavPageState extends State<MainNavPage> {
-  int _selectedIndex = 0;
-
-  // --- HAPUS JURNAL MOOD DARI SINI ---
   static const List<Widget> _pages = <Widget>[
     HomePage(),
     HistoryPage(),
   ];
-  // ----------------------------------
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 2. Pantau perubahan index dari provider
+    final selectedIndex = ref.watch(bottomNavIndexProvider);
+
     return Scaffold(
       body: IndexedStack(
-        index: _selectedIndex,
+        index: selectedIndex,
         children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -40,17 +31,17 @@ class _MainNavPageState extends State<MainNavPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
-            label: 'Beranda', // Ubah dari Home
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history_outlined),
             activeIcon: Icon(Icons.history),
             label: 'Riwayat',
           ),
-          // --- HAPUS TAB JURNAL MOOD DARI SINI ---
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: selectedIndex,
+        // 3. Update provider saat user menekan tab
+        onTap: (index) => ref.read(bottomNavIndexProvider.notifier).state = index,
         type: BottomNavigationBarType.fixed,
       ),
     );

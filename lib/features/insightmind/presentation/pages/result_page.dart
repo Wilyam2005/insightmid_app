@@ -1,11 +1,14 @@
+// lib/features/insightmind/presentation/pages/result_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:insightmid_app/features/insightmind/presentation/pages/home_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; 
+import 'main_nav_page.dart'; // Akses ke provider navigasi
 
 // --- IMPORT HALAMAN PEDOMETER ---
 import 'pedometer_page.dart'; 
 // --------------------------------
 
-class ResultPage extends StatelessWidget {
+class ResultPage extends ConsumerWidget {
   final int totalScore;
   final String riskLevel;
 
@@ -15,36 +18,42 @@ class ResultPage extends StatelessWidget {
     required this.riskLevel,
   });
 
-  // Logika sederhana: Jika risiko BUKAN Normal/Minimal, berarti butuh aktivitas
+  // Logika: Jika risiko BUKAN Normal, butuh aktivitas
   bool get _needsActivity {
     final level = riskLevel.toLowerCase();
     return level.contains('sedang') || 
            level.contains('berat') || 
            level.contains('tinggi') ||
-           level.contains('ringan'); // Bahkan stres ringan pun butuh jalan kaki
+           level.contains('ringan');
+  }
+
+  // Helper function: Kembali ke Menu Utama (Beranda)
+  void _finishAndGoToHome(BuildContext context, WidgetRef ref) {
+    // 1. Set tab aktif ke 'Beranda' (index 0)
+    ref.read(bottomNavIndexProvider.notifier).state = 0;
+    
+    // 2. Buang halaman Result ini dan kembali ke MainNavPage
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Tentukan warna berdasarkan tingkat risiko
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Warna status
     Color statusColor = Colors.green;
     if (riskLevel.contains('Sedang')) statusColor = Colors.orange;
     if (riskLevel.contains('Berat') || riskLevel.contains('Tinggi')) statusColor = Colors.red;
+
+    // Deteksi Dark Mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Hasil Analisis"),
         centerTitle: true,
+        automaticallyImplyLeading: false, // Hilangkan tombol back default
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () {
-            // Kembali ke Home dan hapus semua stack navigasi sebelumnya
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
-              (route) => false,
-            );
-          },
+          onPressed: () => _finishAndGoToHome(context, ref), // Kembali ke Beranda
         ),
       ),
       body: SingleChildScrollView(
@@ -107,24 +116,18 @@ class ResultPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // --- FITUR BARU: REKOMENDASI JALAN KAKI ---
-              if (_needsActivity) _buildWalkingRecommendation(context),
-              // ------------------------------------------
+              // --- FITUR REKOMENDASI AKTIVITAS ---
+              if (_needsActivity) _buildWalkingRecommendation(context, isDarkMode),
+              // -----------------------------------
 
               const SizedBox(height: 24),
 
-              // Tombol Kembali ke Beranda
+              // Tombol Selesai (Ke Beranda)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                      (route) => false,
-                    );
-                  },
-                  child: const Text("Kembali ke Beranda"),
+                  onPressed: () => _finishAndGoToHome(context, ref),
+                  child: const Text("Selesai & Kembali ke Beranda"),
                 ),
               ),
             ],
@@ -134,11 +137,11 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildWalkingRecommendation(BuildContext context) {
+  Widget _buildWalkingRecommendation(BuildContext context, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: isDarkMode ? Colors.blue.withOpacity(0.1) : Colors.blue.shade50,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.blue.shade200),
       ),
@@ -155,18 +158,21 @@ class ResultPage extends StatelessWidget {
                 child: const Icon(Icons.directions_walk, color: Colors.blue, size: 30),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Rekomendasi Aktivitas",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       "Berjalan kaki 15 menit dapat membantu meredakan kecemasan dan stres Anda saat ini.",
-                      style: TextStyle(fontSize: 13, color: Colors.black87),
+                      style: TextStyle(
+                        fontSize: 13, 
+                        color: isDarkMode ? Colors.white70 : Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -185,7 +191,7 @@ class ResultPage extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                // Navigasi langsung ke Pedometer
+                // Navigasi ke Pedometer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const PedometerPage()),
