@@ -2,11 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; 
-import 'main_nav_page.dart'; // Akses ke provider navigasi
+import 'package:intl/intl.dart'; // Untuk format tanggal
 
-// --- IMPORT HALAMAN PEDOMETER ---
-import 'pedometer_page.dart'; 
-// --------------------------------
+// --- IMPORT PDF & PRINTING ---
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+// -----------------------------
+
+import 'main_nav_page.dart'; // Akses ke provider navigasi
+import 'pedometer_page.dart'; // Import halaman pedometer
 
 class ResultPage extends ConsumerWidget {
   final int totalScore;
@@ -36,25 +41,131 @@ class ResultPage extends ConsumerWidget {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  // ===================================================
+  // FUNGSI MEMBUAT PDF (BARU)
+  // ===================================================
+  Future<void> _generateAndDownloadPdf(BuildContext context) async {
+    final pdf = pw.Document();
+    final date = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now());
+    final time = DateFormat('HH:mm').format(DateTime.now());
+
+    // Tentukan warna teks PDF (PDF menggunakan PdfColors, bukan Colors biasa)
+    PdfColor statusColorPdf = PdfColors.green;
+    if (riskLevel.contains('Sedang')) statusColorPdf = PdfColors.orange;
+    if (riskLevel.contains('Berat') || riskLevel.contains('Tinggi')) statusColorPdf = PdfColors.red;
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header Laporan
+              pw.Header(
+                level: 0,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text("Laporan InsightMind", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                    pw.Text("Kesehatan Mental", style: const pw.TextStyle(fontSize: 18, color: PdfColors.grey)),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 20),
+
+              // Informasi Tanggal
+              pw.Text("Tanggal Pemeriksaan: $date"),
+              pw.Text("Waktu: $time"),
+              pw.Divider(),
+              pw.SizedBox(height: 30),
+
+              // Konten Utama (Skor & Risiko)
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text("HASIL SCREENING ANDA", style: pw.TextStyle(fontSize: 16, color: PdfColors.grey700)),
+                    pw.SizedBox(height: 10),
+                    
+                    // Lingkaran Skor di PDF
+                    pw.Container(
+                      padding: const pw.EdgeInsets.all(20),
+                      decoration: pw.BoxDecoration(
+                        shape: pw.BoxShape.circle,
+                        border: pw.Border.all(color: statusColorPdf, width: 4),
+                      ),
+                      child: pw.Column(
+                        children: [
+                          pw.Text("$totalScore", style: pw.TextStyle(fontSize: 40, fontWeight: pw.FontWeight.bold, color: statusColorPdf)),
+                          pw.Text("Skor Total", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)),
+                        ],
+                      ),
+                    ),
+                    pw.SizedBox(height: 20),
+                    
+                    pw.Text("Tingkat Risiko:", style: const pw.TextStyle(fontSize: 14)),
+                    pw.Text(riskLevel, style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: statusColorPdf)),
+                  ],
+                ),
+              ),
+              
+              pw.SizedBox(height: 50),
+              
+              // Kotak Disclaimer
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Text(
+                  "DISCLAIMER: Hasil ini hanyalah indikasi awal berdasarkan jawaban kuesioner Anda dan BUKAN merupakan diagnosis medis profesional. Jika Anda merasa membutuhkan bantuan, harap segera hubungi psikolog atau psikiater terdekat.",
+                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
+                  textAlign: pw.TextAlign.justify,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Center(child: pw.Text("© InsightMind App", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey))),
+            ],
+          );
+        },
+      ),
+    );
+
+    // Membuka UI Print/Save bawaan HP
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Hasil-Screening-InsightMind-$date',
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Warna status
+    // Warna status UI (Material Colors)
     Color statusColor = Colors.green;
     if (riskLevel.contains('Sedang')) statusColor = Colors.orange;
     if (riskLevel.contains('Berat') || riskLevel.contains('Tinggi')) statusColor = Colors.red;
 
-    // Deteksi Dark Mode
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Hasil Analisis"),
         centerTitle: true,
-        automaticallyImplyLeading: false, // Hilangkan tombol back default
+        automaticallyImplyLeading: false, 
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => _finishAndGoToHome(context, ref), // Kembali ke Beranda
+          onPressed: () => _finishAndGoToHome(context, ref), 
         ),
+        // --- TOMBOL DOWNLOAD PDF (BARU) ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: "Download PDF",
+            onPressed: () => _generateAndDownloadPdf(context),
+          ),
+        ],
+        // ----------------------------------
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -64,7 +175,7 @@ class ResultPage extends ConsumerWidget {
             children: [
               const SizedBox(height: 20),
               
-              // Lingkaran Skor
+              // Lingkaran Skor UI
               Container(
                 width: 150,
                 height: 150,
@@ -91,7 +202,6 @@ class ResultPage extends ConsumerWidget {
               
               const SizedBox(height: 24),
               
-              // Teks Tingkat Risiko
               Text(
                 "Tingkat Risiko:",
                 style: Theme.of(context).textTheme.bodyLarge,
@@ -116,18 +226,16 @@ class ResultPage extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              // --- FITUR REKOMENDASI AKTIVITAS ---
               if (_needsActivity) _buildWalkingRecommendation(context, isDarkMode),
-              // -----------------------------------
 
               const SizedBox(height: 24),
 
-              // Tombol Selesai (Ke Beranda)
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.home),
+                  label: const Text("Selesai & Kembali ke Beranda"),
                   onPressed: () => _finishAndGoToHome(context, ref),
-                  child: const Text("Selesai & Kembali ke Beranda"),
                 ),
               ),
             ],
@@ -191,7 +299,6 @@ class ResultPage extends ConsumerWidget {
                 ),
               ),
               onPressed: () {
-                // Navigasi ke Pedometer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const PedometerPage()),
