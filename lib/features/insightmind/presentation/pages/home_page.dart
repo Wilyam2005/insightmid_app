@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:intl/intl.dart'; // Untuk format tanggal
+import 'package:intl/intl.dart'; 
 
 // Import semua halaman yang akan dinavigasi
 import 'mood_checkin_page.dart';
@@ -12,6 +12,10 @@ import 'education_page.dart';
 import 'breathing_exercise_page.dart';
 import 'emergency_contacts_page.dart';
 import 'settings_page.dart';
+
+// --- TAMBAHAN IMPORT HALAMAN PEDOMETER ---
+import 'pedometer_page.dart'; 
+// ----------------------------------------
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -33,7 +37,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     const String nama = "Selamat Datang";
     const String quote = "Semoga harimu tenang.";
-    // Locale 'id_ID' sudah diinisialisasi di main.dart
     final String tanggalHariIni = DateFormat('EEEE, d MMMM', 'id_ID').format(DateTime.now());
 
     return Scaffold(
@@ -49,7 +52,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               const SizedBox(height: 24),
               _buildStatusInfo(),
               const SizedBox(height: 24),
-              _buildGridMenu(context), // Navigasi ada di dalam method ini
+              _buildGridMenu(context), 
               const SizedBox(height: 32),
               _buildScheduleSection(tanggalHariIni),
             ],
@@ -209,14 +212,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildGridMenu(BuildContext context) {
+    // --- UPDATE: MENAMBAHKAN MENU CEK LANGKAH ---
     final menuItems = [
       { 'label': 'Mulai Screening', 'icon': Icons.checklist, 'color': Colors.blue },
       { 'label': 'Jurnal Mood', 'icon': Icons.sentiment_satisfied, 'color': Colors.teal },
       { 'label': 'Artikel Edukasi', 'icon': Icons.lightbulb_outline, 'color': Colors.orange },
       { 'label': 'Latihan Napas', 'icon': Icons.self_improvement, 'color': Colors.purple },
+      
+      // Tambahan Menu Pedometer
+      { 'label': 'Cek Langkah', 'icon': Icons.directions_walk, 'color': Colors.green }, 
+      
       { 'label': 'Kontak Darurat', 'icon': Icons.local_hospital, 'color': Colors.red },
       { 'label': 'Pengaturan', 'icon': Icons.settings, 'color': Colors.grey },
     ];
+    // ---------------------------------------------
 
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -235,10 +244,10 @@ class _HomePageState extends ConsumerState<HomePage> {
           item['icon'] as IconData,
           item['color'] as Color,
           () {
-            // --- LOGIKA NAVIGASI YANG DIPERBARUI ---
             String label = item['label'] as String;
-            Widget? targetPage; // Widget halaman tujuan
+            Widget? targetPage; 
 
+            // --- LOGIKA SWITCH NAVIGASI DIPERBARUI ---
             switch (label) {
               case 'Mulai Screening':
                 targetPage = const ScreeningPage();
@@ -247,32 +256,34 @@ class _HomePageState extends ConsumerState<HomePage> {
                 targetPage = const MoodCheckinPage();
                 break;
               case 'Artikel Edukasi':
-                targetPage = const EducationPage(); // Navigasi ke halaman baru
+                targetPage = const EducationPage();
                 break;
               case 'Latihan Napas':
-                targetPage = const BreathingExercisePage(); // Navigasi ke halaman baru
+                targetPage = const BreathingExercisePage();
+                break;
+              // Tambahkan case untuk Pedometer
+              case 'Cek Langkah':
+                targetPage = const PedometerPage();
                 break;
               case 'Kontak Darurat':
-                targetPage = const EmergencyContactsPage(); // Navigasi ke halaman baru
+                targetPage = const EmergencyContactsPage(); 
                 break;
               case 'Pengaturan':
-                targetPage = const SettingsPage(); // Navigasi ke halaman baru
+                targetPage = const SettingsPage(); 
                 break;
             }
+            // ----------------------------------------
 
             if (targetPage != null) {
-              // Gunakan Navigator.push agar ada tombol back
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => targetPage!),
               );
             } else {
-              // Fallback jika label tidak cocok
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Aksi untuk $label belum didefinisikan')),
               );
             }
-            // ------------------------------------
           },
         );
       },
@@ -337,7 +348,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             IconButton.filled(
               icon: const Icon(Icons.arrow_forward_ios),
               onPressed: () {
-                // Navigasi ke halaman pengingat (belum dibuat)
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Menuju Halaman Pengingat...')),
                 );
@@ -348,4 +358,4 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
    }
-} // Akhir _HomePageState
+}
