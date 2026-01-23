@@ -47,7 +47,7 @@ class MoodCheckinPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jurnal Mood'),
+        title: const Text('Jurnal Mood Anda'),
         centerTitle: true,
       ),
       body: cameraControllerAsync.when(
